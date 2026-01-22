@@ -175,7 +175,7 @@ Status Frontend::InDataExchange(std::vector<uint8_t> send,
 
   Status status = transceive(command, response, timeout);
 
-  LOGF(loggable::LogLevel::Debug, "Response Status: {}",
+  LOG(loggable::LogLevel::Debug, "Response Status: {}",
        fmt::underlying(status));
 
   if (!response.empty() && response[0] != 0x41) {
@@ -312,7 +312,7 @@ Status Frontend::parseResponse(Transaction &txn, std::vector<uint8_t> &buffer) {
     }
 
     len = (len_m << 8) | len_l;
-    LOGF(loggable::LogLevel::Debug, "Extended frame (LEN={})", len);
+    LOG(loggable::LogLevel::Debug, "Extended frame (LEN={})", len);
   } else {
     uint8_t len_std = len_lcs[0];
     uint8_t lcs = len_lcs[1];
@@ -321,7 +321,7 @@ Status Frontend::parseResponse(Transaction &txn, std::vector<uint8_t> &buffer) {
       LOG(loggable::LogLevel::Error, "Length Checksum Error");
       return Status::CHECKSUM_ERROR;
     }
-    LOGF(loggable::LogLevel::Verbose, "Standard frame (LEN={})", len_std);
+    LOG(loggable::LogLevel::Verbose, "Standard frame (LEN={})", len_std);
 
     len = len_std;
   }
@@ -334,7 +334,7 @@ Status Frontend::parseResponse(Transaction &txn, std::vector<uint8_t> &buffer) {
   std::vector<uint8_t> frame_data(len);
   st = txn.read(frame_data);
   if (st != Status::SUCCESS) {
-    LOGF(loggable::LogLevel::Error, "Failed to read frame data of size {}",
+    LOG(loggable::LogLevel::Error, "Failed to read frame data of size {}",
          len);
     return st;
   }
@@ -352,7 +352,7 @@ Status Frontend::parseResponse(Transaction &txn, std::vector<uint8_t> &buffer) {
   }
 
   if (tfi != PN532_PN532TOHOST) {
-    LOGF(loggable::LogLevel::Error, "Invalid TFI: {:02x}", tfi);
+    LOG(loggable::LogLevel::Error, "Invalid TFI: {:02x}", tfi);
     return Status::INVALID_FRAME;
   }
 
@@ -362,7 +362,7 @@ Status Frontend::parseResponse(Transaction &txn, std::vector<uint8_t> &buffer) {
   }
   if (static_cast<uint8_t>(sum + dcs[0]) != 0) {
     LOG(loggable::LogLevel::Error, "Data Checksum Error");
-    LOGF(loggable::LogLevel::Debug, "Packet Data: {:02X}",
+    LOG(loggable::LogLevel::Debug, "Packet Data: {:02X}",
          fmt::join(frame_data, ""));
     return Status::CHECKSUM_ERROR;
   }
