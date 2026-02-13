@@ -2,7 +2,7 @@
 
 #include "transport.hpp"
 #include <cstdint>
-#include <span>
+#include "pn532_cxx/span.hpp"
 #include <vector>
 
 #include "loggable.hpp"
@@ -48,7 +48,7 @@ private:
   /**
    * @brief Send a command and receive response using Transaction.
    */
-  Status transceive(std::span<const uint8_t> cmd, std::vector<uint8_t> &response,
+  Status transceive(span<const uint8_t> cmd, std::vector<uint8_t> &response,
                      uint32_t timeout_ms = 1000);
 
   /**

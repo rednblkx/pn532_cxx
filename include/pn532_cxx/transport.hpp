@@ -2,7 +2,7 @@
 
 #include "transaction.hpp"
 #include <cstdint>
-#include <span>
+#include "pn532_cxx/span.hpp"
 
 namespace pn532 {
 
@@ -40,7 +40,7 @@ protected:
    * @brief Write data during an active transaction.
    * @param data Data to send
    */
-  virtual Status writeChunk(std::span<const uint8_t> data) = 0;
+  virtual Status writeChunk(span<const uint8_t> data) = 0;
 
   /**
    * @brief Wait for data ready within transaction.
@@ -58,7 +58,7 @@ protected:
    * @brief Read a chunk of data during an active transaction.
    * @param buffer Span to fill with data
    */
-  virtual Status readChunk(std::span<uint8_t> buffer) = 0;
+  virtual Status readChunk(span<uint8_t> buffer) = 0;
 
   /**
    * @brief End the current transaction.

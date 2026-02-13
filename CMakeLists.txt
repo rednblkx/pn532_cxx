@@ -6,14 +6,12 @@ idf_component_register(
     REQUIRES driver loggable
 )
 
-target_compile_options(${COMPONENT_LIB} PRIVATE -std=gnu++20)
-
 else()
 cmake_minimum_required(VERSION 4.1)
 
 project(pn532_cxx)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 
 add_library(pn532_cxx src/pn532.cpp src/transaction.cpp)
 

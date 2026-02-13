@@ -35,7 +35,7 @@ Transaction::~Transaction() {
   }
 }
 
-Status Transaction::write(std::span<const uint8_t> data) {
+Status Transaction::write(span<const uint8_t> data) {
   if (!_valid || !_transport) {
     return TRANSPORT_ERROR;
   }
@@ -102,7 +102,7 @@ Status Transaction::waitForResponse(uint32_t timeout_ms) {
   return SUCCESS;
 }
 
-Status Transaction::read(std::span<uint8_t> buffer) {
+Status Transaction::read(span<uint8_t> buffer) {
   if (!_valid || !_transport) {
     return TRANSPORT_ERROR;
   }

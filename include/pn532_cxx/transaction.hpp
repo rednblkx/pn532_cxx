@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-#include <span>
+#include "span.hpp"
 
 namespace pn532 {
 
@@ -46,7 +46,7 @@ public:
    * @param data Data to send
    * @return Status of the write operation
    */
-  Status write(std::span<const uint8_t> data);
+  Status write(span<const uint8_t> data);
 
   /**
    * @brief Wait for and validate ACK frame.
@@ -67,7 +67,7 @@ public:
    * @param buffer Span to fill with data
    * @return Status of the read operation
    */
-  Status read(std::span<uint8_t> buffer);
+  Status read(span<uint8_t> buffer);
 
   /**
    * @brief Check if the transaction is valid.

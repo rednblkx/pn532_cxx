@@ -199,7 +199,7 @@ Status Frontend::WriteRegister(std::vector<uint8_t> data) {
   return transceive(command, _packetBuffer);
 }
 
-Status Frontend::transceive(std::span<const uint8_t> cmd,
+Status Frontend::transceive(span<const uint8_t> cmd,
                              std::vector<uint8_t> &response,
                              uint32_t timeout_ms) {
   std::vector<uint8_t> packet;
