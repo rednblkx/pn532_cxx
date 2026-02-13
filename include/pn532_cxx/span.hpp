@@ -3,17 +3,16 @@
 // C++17/20 span compatibility header
 // Provides std::span for C++20+, custom minimal implementation for C++17
 
-#include <cstddef>
-#include <array>
-#include <vector>
-#include <type_traits>
-
 #if __cplusplus >= 202002L
   #include <span>
   namespace pn532 {
     using std::span;
   }
 #else
+#include <cstddef>
+#include <array>
+#include <vector>
+#include <type_traits>
   namespace pn532 {
     template<typename T>
     class span {
