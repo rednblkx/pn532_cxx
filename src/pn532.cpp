@@ -258,6 +258,7 @@ Status Frontend::parseResponse(Transaction &txn, std::vector<uint8_t> &buffer) {
   for (size_t scan = 0; scan < MAX_SCAN; ++scan) {
     Status st = txn.read(preamble);
     if (st != Status::SUCCESS) {
+      _protocol.abort();
       return st;
     }
 
@@ -271,6 +272,7 @@ Status Frontend::parseResponse(Transaction &txn, std::vector<uint8_t> &buffer) {
     std::array<uint8_t, 1> next;
     st = txn.read(next);
     if (st != Status::SUCCESS) {
+      _protocol.abort();
       return st;
     }
     preamble[2] = next[0];
@@ -283,6 +285,7 @@ Status Frontend::parseResponse(Transaction &txn, std::vector<uint8_t> &buffer) {
 
   if (!found_start) {
     LOG(loggable::LogLevel::Error, "Preamble missing");
+    _protocol.abort();
     return Status::INVALID_FRAME;
   }
 
@@ -299,6 +302,7 @@ Status Frontend::parseResponse(Transaction &txn, std::vector<uint8_t> &buffer) {
     std::array<uint8_t, 3> ext_len;
     st = txn.read(ext_len);
     if (st != Status::SUCCESS) {
+      _protocol.abort();
       return st;
     }
 
@@ -308,6 +312,7 @@ Status Frontend::parseResponse(Transaction &txn, std::vector<uint8_t> &buffer) {
 
     if (static_cast<uint8_t>(len_m + len_l + lcs) != 0x00) {
       LOG(loggable::LogLevel::Error, "Extended Length Checksum Error");
+      _protocol.abort();
       return Status::CHECKSUM_ERROR;
     }
 
@@ -319,6 +324,7 @@ Status Frontend::parseResponse(Transaction &txn, std::vector<uint8_t> &buffer) {
 
     if (static_cast<uint8_t>(len_std + lcs) != 0x00) {
       LOG(loggable::LogLevel::Error, "Length Checksum Error");
+      _protocol.abort();
       return Status::CHECKSUM_ERROR;
     }
     LOG(loggable::LogLevel::Verbose, "Standard frame (LEN={})", len_std);
@@ -328,6 +334,7 @@ Status Frontend::parseResponse(Transaction &txn, std::vector<uint8_t> &buffer) {
 
   if (len == 0) {
     LOG(loggable::LogLevel::Error, "Zero length frame");
+    _protocol.abort();
     return Status::INVALID_FRAME;
   }
 
@@ -336,6 +343,7 @@ Status Frontend::parseResponse(Transaction &txn, std::vector<uint8_t> &buffer) {
   if (st != Status::SUCCESS) {
     LOG(loggable::LogLevel::Error, "Failed to read frame data of size {}",
          len);
+    _protocol.abort();
     return st;
   }
 
@@ -344,6 +352,7 @@ Status Frontend::parseResponse(Transaction &txn, std::vector<uint8_t> &buffer) {
   st = txn.read(dcs);
   if (st != Status::SUCCESS) {
     LOG(loggable::LogLevel::Error, "Failed to read DCS");
+    _protocol.abort();
     return st;
   }
 
@@ -353,6 +362,7 @@ Status Frontend::parseResponse(Transaction &txn, std::vector<uint8_t> &buffer) {
 
   if (tfi != PN532_PN532TOHOST) {
     LOG(loggable::LogLevel::Error, "Invalid TFI: {:02x}", tfi);
+    _protocol.abort();
     return Status::INVALID_FRAME;
   }
 
@@ -364,6 +374,7 @@ Status Frontend::parseResponse(Transaction &txn, std::vector<uint8_t> &buffer) {
     LOG(loggable::LogLevel::Error, "Data Checksum Error");
     LOG(loggable::LogLevel::Debug, "Packet Data: {:02X}",
          fmt::join(frame_data, ""));
+    _protocol.abort();
     return Status::CHECKSUM_ERROR;
   }
 
@@ -371,8 +382,10 @@ Status Frontend::parseResponse(Transaction &txn, std::vector<uint8_t> &buffer) {
   st = txn.read(postamble);
   if (st != Status::SUCCESS) {
     LOG(loggable::LogLevel::Warning, "Failed to read postamble");
+    _protocol.abort();
   } else if (postamble[0] != 0x00) {
     LOG(loggable::LogLevel::Warning, "Postamble invalid");
+    _protocol.abort();
   }
 
   size_t data_len = len - 1;
