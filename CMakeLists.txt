@@ -3,7 +3,7 @@ idf_component_register(
     SRCS "src/pn532.cpp"
          "src/transaction.cpp"
     INCLUDE_DIRS "include"
-    REQUIRES driver loggable
+    REQUIRES driver esp_driver_gpio loggable
 )
 
 else()
