@@ -1,152 +1,108 @@
 #pragma once
 
-// C++17/20 span compatibility header
-// Provides std::span for C++20+, custom minimal implementation for C++17
+#include <cstddef>
+#include <type_traits>
 
 #if __cplusplus >= 202002L
   #include <span>
-  namespace pn532 {
-    using std::span;
-  }
-#else
-#include <cstddef>
-#include <array>
-#include <vector>
-#include <type_traits>
-  namespace pn532 {
-    template<typename T>
-    class span {
-    public:
-      using element_type = T;
-      using value_type = typename std::remove_cv<T>::type;
-      using size_type = std::size_t;
-      using pointer = T*;
-      using const_pointer = const T*;
-      using reference = T&;
-      using const_reference = const T&;
-
-      constexpr span() noexcept : _data(nullptr), _size(0) {}
-
-      constexpr span(pointer data, size_type size) noexcept
-        : _data(data), _size(size) {}
-
-      template<std::size_t N>
-      constexpr span(std::array<value_type, N>& arr) noexcept
-        : _data(arr.data()), _size(N) {}
-
-      template<std::size_t N>
-      constexpr span(const std::array<value_type, N>& arr) noexcept
-        : _data(arr.data()), _size(N) {}
-
-      constexpr span(std::vector<value_type>& vec) noexcept
-        : _data(vec.data()), _size(vec.size()) {}
-
-      constexpr span(const std::vector<value_type>& vec) noexcept
-        : _data(vec.data()), _size(vec.size()) {}
-
-      template<std::size_t N>
-      constexpr span(value_type (&arr)[N]) noexcept
-        : _data(arr), _size(N) {}
-
-      template<std::size_t N>
-      constexpr span(const value_type (&arr)[N]) noexcept
-        : _data(arr), _size(N) {}
-
-      constexpr span(const span& other) noexcept = default;
-
-      constexpr span& operator=(const span& other) noexcept = default;
-
-      constexpr pointer data() const noexcept { return _data; }
-      constexpr size_type size() const noexcept { return _size; }
-      constexpr bool empty() const noexcept { return _size == 0; }
-
-      constexpr reference operator[](size_type idx) const { return _data[idx]; }
-
-      constexpr pointer begin() const noexcept { return _data; }
-      constexpr pointer end() const noexcept { return _data + _size; }
-
-      constexpr span subspan(size_type offset, size_type count = static_cast<size_type>(-1)) const {
-        if (offset >= _size) {
-          return span();
-        }
-        if (count == static_cast<size_type>(-1) || offset + count > _size) {
-          count = _size - offset;
-        }
-        return span(_data + offset, count);
-      }
-
-    private:
-      pointer _data;
-      size_type _size;
-    };
-
-    template<typename T>
-    class span<const T> {
-    public:
-      using element_type = const T;
-      using value_type = typename std::remove_cv<T>::type;
-      using size_type = std::size_t;
-      using pointer = const T*;
-      using const_pointer = const T*;
-      using reference = const T&;
-      using const_reference = const T&;
-
-      constexpr span() noexcept : _data(nullptr), _size(0) {}
-
-      constexpr span(pointer data, size_type size) noexcept
-        : _data(data), _size(size) {}
-
-      template<std::size_t N>
-      constexpr span(const std::array<value_type, N>& arr) noexcept
-        : _data(arr.data()), _size(N) {}
-
-      template<std::size_t N>
-      constexpr span(std::array<value_type, N>& arr) noexcept
-        : _data(arr.data()), _size(N) {}
-
-      constexpr span(const std::vector<value_type>& vec) noexcept
-        : _data(vec.data()), _size(vec.size()) {}
-
-      constexpr span(std::vector<value_type>& vec) noexcept
-        : _data(vec.data()), _size(vec.size()) {}
-
-      template<std::size_t N>
-      constexpr span(const value_type (&arr)[N]) noexcept
-        : _data(arr), _size(N) {}
-
-      template<std::size_t N>
-      constexpr span(value_type (&arr)[N]) noexcept
-        : _data(arr), _size(N) {}
-
-      constexpr span(const span<value_type>& other) noexcept
-        : _data(other.data()), _size(other.size()) {}
-
-      constexpr span(const span& other) noexcept = default;
-
-      constexpr span& operator=(const span& other) noexcept = default;
-
-      constexpr pointer data() const noexcept { return _data; }
-      constexpr size_type size() const noexcept { return _size; }
-      constexpr bool empty() const noexcept { return _size == 0; }
-
-      constexpr reference operator[](size_type idx) const { return _data[idx]; }
-
-      constexpr pointer begin() const noexcept { return _data; }
-      constexpr pointer end() const noexcept { return _data + _size; }
-
-      constexpr span subspan(size_type offset, size_type count = static_cast<size_type>(-1)) const {
-        if (offset >= _size) {
-          return span();
-        }
-        if (count == static_cast<size_type>(-1) || offset + count > _size) {
-          count = _size - offset;
-        }
-        return span(_data + offset, count);
-      }
-
-    private:
-      pointer _data;
-      size_type _size;
-    };
-  }
 #endif
+
+namespace pn532 {
+
+namespace detail {
+    template <typename From, typename To>
+    using is_allowed_pointer_conversion = std::is_convertible<From(*)[], To(*)[]>;
+
+    template <typename Container, typename ElementType, typename = void>
+    struct is_compatible_container : std::false_type {};
+
+    template <typename Container, typename ElementType>
+    struct is_compatible_container<Container, ElementType, std::void_t<
+        decltype(std::declval<Container&>().data()),
+        decltype(std::declval<Container&>().size())
+    >> : is_allowed_pointer_conversion<
+            std::remove_pointer_t<decltype(std::declval<Container&>().data())>, 
+            ElementType
+         > {};
+} // namespace detail
+
+template<typename T>
+class span {
+public:
+    using element_type = T;
+    using value_type = std::remove_cv_t<T>;
+    using size_type = std::size_t;
+    using pointer = T*;
+    using const_pointer = const T*;
+    using reference = T&;
+    using const_reference = const T&;
+    using iterator = pointer;
+
+    constexpr span() noexcept : _data(nullptr), _size(0) {}
+
+    constexpr span(pointer data, size_type size) noexcept : _data(data), _size(size) {}
+
+    constexpr span(pointer first, pointer last) noexcept : _data(first), _size(last - first) {}
+
+    template<std::size_t N>
+    constexpr span(element_type (&arr)[N]) noexcept : _data(arr), _size(N) {}
+
+    template<typename Container, typename = std::enable_if_t<
+        !std::is_same_v<std::decay_t<Container>, span> &&
+        detail::is_compatible_container<Container, element_type>::value
+    >>
+    constexpr span(Container& c) noexcept : _data(c.data()), _size(c.size()) {}
+
+    template<typename Container, typename = std::enable_if_t<
+        !std::is_same_v<std::decay_t<Container>, span> &&
+        detail::is_compatible_container<const Container, element_type>::value
+    >>
+    constexpr span(const Container& c) noexcept : _data(c.data()), _size(c.size()) {}
+
+    template<typename U, typename = std::enable_if_t<
+        detail::is_allowed_pointer_conversion<U, element_type>::value
+    >>
+    constexpr span(const span<U>& other) noexcept : _data(other.data()), _size(other.size()) {}
+
+#if __cplusplus >= 202002L || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L)
+    constexpr span(std::span<T> s) noexcept : _data(s.data()), _size(s.size()) {}
+    constexpr operator std::span<T>() const noexcept { return std::span<T>(_data, _size); }
+#endif
+
+    constexpr pointer data() const noexcept { return _data; }
+    constexpr size_type size() const noexcept { return _size; }
+    constexpr size_type size_bytes() const noexcept { return _size * sizeof(element_type); }
+    constexpr bool empty() const noexcept { return _size == 0; }
+
+    constexpr reference operator[](size_type idx) const { return _data[idx]; }
+    constexpr reference front() const { return _data[0]; }
+    constexpr reference back() const { return _data[_size - 1]; }
+
+    constexpr iterator begin() const noexcept { return _data; }
+    constexpr iterator end() const noexcept { return _data + _size; }
+
+    constexpr span subspan(size_type offset, size_type count = static_cast<size_type>(-1)) const {
+        if (offset > _size) {
+            return span(); // Or assert depending on safety policy
+        }
+        if (count == static_cast<size_type>(-1) || count > _size - offset) {
+            count = _size - offset;
+        }
+        return span(_data + offset, count);
+    }
+
+private:
+    pointer _data;
+    size_type _size;
+};
+
+template<typename T, std::size_t N>
+span(T (&)[N]) -> span<T>;
+
+template<typename Container>
+span(Container&) -> span<typename Container::value_type>;
+
+template<typename Container>
+span(const Container&) -> span<const typename Container::value_type>;
+
+} // namespace pn532
