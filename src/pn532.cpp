@@ -5,6 +5,7 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <optional>
 
 #define PN532_PREAMBLE (0x00)
 #define PN532_STARTCODE1 (0x00)
@@ -46,18 +47,18 @@ Status Frontend::begin() {
   return SAMConfig();
 }
 
-uint32_t Frontend::GetFirmwareVersion() {
+std::optional<uint32_t> Frontend::GetFirmwareVersion() {
   uint8_t command[] = {PN532_COMMAND_GETFIRMWAREVERSION};
 
   std::vector<uint8_t> response;
   Status status = transceive(command, response);
 
   if (status != Status::SUCCESS) {
-    return 0;
+    return std::nullopt;
   }
 
   if (response.size() < 5) {
-    return 0;
+    return std::nullopt;
   }
 
   uint32_t version = response[2];
@@ -80,7 +81,7 @@ Status Frontend::SAMConfig() {
 }
 
 Status Frontend::RFConfiguration(uint8_t cfgItem,
-                                 std::vector<uint8_t> confData) {
+                                 span<const uint8_t> confData) {
   std::vector<uint8_t> command = {PN532_COMMAND_RFCONFIGURATION, cfgItem};
   command.insert(command.end(), confData.begin(), confData.end());
 
@@ -158,7 +159,7 @@ Status Frontend::InListPassiveTarget(uint8_t cardbaudrate,
   return status;
 }
 
-Status Frontend::InCommunicateThru(std::vector<uint8_t> send,
+Status Frontend::InCommunicateThru(span<const uint8_t> send,
                                    std::vector<uint8_t> &response,
                                    uint16_t timeout) {
   std::vector<uint8_t> command = {PN532_COMMAND_INCOMMUNICATETHRU};
@@ -167,7 +168,7 @@ Status Frontend::InCommunicateThru(std::vector<uint8_t> send,
   return transceive(command, response, timeout);
 }
 
-Status Frontend::InDataExchange(std::vector<uint8_t> send,
+Status Frontend::InDataExchange(span<const uint8_t> send,
                                 std::vector<uint8_t> &response,
                                 uint16_t timeout) {
   std::vector<uint8_t> command = {PN532_COMMAND_INDATAEXCHANGE, 0x01};
@@ -184,7 +185,7 @@ Status Frontend::InDataExchange(std::vector<uint8_t> send,
   return status;
 }
 
-Status Frontend::ReadRegister(std::vector<uint8_t> reg,
+Status Frontend::ReadRegister(span<const uint8_t> reg,
                               std::vector<uint8_t> &response) {
   std::vector<uint8_t> command = {PN532_COMMAND_READREGISTER};
   command.insert(command.end(), reg.begin(), reg.end());
@@ -192,7 +193,7 @@ Status Frontend::ReadRegister(std::vector<uint8_t> reg,
   return transceive(command, response);
 }
 
-Status Frontend::WriteRegister(std::vector<uint8_t> data) {
+Status Frontend::WriteRegister(span<const uint8_t> data) {
   std::vector<uint8_t> command = {PN532_COMMAND_WRITEREGISTER};
   command.insert(command.end(), data.begin(), data.end());
 

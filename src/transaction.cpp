@@ -37,21 +37,21 @@ Transaction::~Transaction() {
 
 Status Transaction::write(span<const uint8_t> data) {
   if (!_valid || !_transport) {
-    return TRANSPORT_ERROR;
+    return Status::TRANSPORT_ERROR;
   }
   return _transport->writeChunk(data);
 }
 
 Status Transaction::waitForAck(uint32_t timeout_ms) {
   if (!_valid || !_transport) {
-    return TRANSPORT_ERROR;
+    return Status::TRANSPORT_ERROR;
   }
 
   _transport->endTransaction();
 
   if (!_transport->waitReady(timeout_ms)) {
     _valid = false;
-    return TIMEOUT;
+    return Status::TIMEOUT;
   }
 
   static constexpr uint8_t EXPECTED_ACK[6] = {0x00, 0x00, 0xFF,
@@ -59,7 +59,7 @@ Status Transaction::waitForAck(uint32_t timeout_ms) {
   uint8_t ack_buf[6];
 
   Status st = _transport->prepareRead();
-  if (st != SUCCESS) {
+  if (st != Status::SUCCESS) {
     _valid = false;
     return st;
   }
@@ -67,7 +67,7 @@ Status Transaction::waitForAck(uint32_t timeout_ms) {
   st = _transport->readChunk({ack_buf, 6});
   _transport->endTransaction();
 
-  if (st != SUCCESS) {
+  if (st != Status::SUCCESS) {
     _valid = false;
     return st;
   }
@@ -75,39 +75,39 @@ Status Transaction::waitForAck(uint32_t timeout_ms) {
   for (size_t i = 0; i < 6; ++i) {
     if (ack_buf[i] != EXPECTED_ACK[i]) {
       _valid = false;
-      return INVALID_FRAME;
+      return Status::INVALID_FRAME;
     }
   }
 
-  return SUCCESS;
+  return Status::SUCCESS;
 }
 
 Status Transaction::waitForResponse(uint32_t timeout_ms) {
   if (!_valid || !_transport) {
-    return TRANSPORT_ERROR;
+    return Status::TRANSPORT_ERROR;
   }
 
   if (!_transport->waitReady(timeout_ms)) {
     _valid = false;
-    return TIMEOUT;
+    return Status::TIMEOUT;
   }
 
   Status st = _transport->prepareRead();
-  if (st != SUCCESS) {
+  if (st != Status::SUCCESS) {
     _valid = false;
     return st;
   }
 
   _in_read_mode = true;
-  return SUCCESS;
+  return Status::SUCCESS;
 }
 
 Status Transaction::read(span<uint8_t> buffer) {
   if (!_valid || !_transport) {
-    return TRANSPORT_ERROR;
+    return Status::TRANSPORT_ERROR;
   }
   if (!_in_read_mode) {
-    return TRANSPORT_ERROR;
+    return Status::TRANSPORT_ERROR;
   }
   return _transport->readChunk(buffer);
 }
